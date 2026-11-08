@@ -48,6 +48,50 @@ public class EnrolmentsController : ControllerBase
 
         return StatusCode(StatusCodes.Status201Created, saved.ToDto());
     }
+    /// <summary>Lists all enrolments for an event (every category). Owning Organiser only.</summary>
+    [HttpGet("events/{id:int}/enrolments")]
+    [Authorize(Roles = AppRoles.Organiser)]
+    [ProducesResponseType(typeof(IEnumerable<EnrolmentDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IEnumerable<EnrolmentDto>>> ForEvent(int id)
+    {
+        var ev = await _db.Events.AsNoTracking().FirstOrDefaultAsync(e => e.EventId == id);
+        if (ev is null) return NotFound();
+        if (ev.OrganiserId != User.GetUserId()) return Forbid();
+
+        var list = await _db.Enrolments.AsNoTracking()
+            .Include(e => e.Participant).Include(e => e.Event).Include(e => e.Category)
+            .Where(e => e.EventId == id)
+            .OrderBy(e => e.EnrolmentDate)
+            .ToListAsync();
+        return Ok(list.Select(e => e.ToDto()));
+    }
+
+    /// <summary>Sets an enrolment's status to Pending or Confirmed. Owning Organiser only.</summary>
+    [HttpPut("enrolments/{id:int}/status")]
+    [Authorize(Roles = AppRoles.Organiser)]
+    [ProducesResponseType(typeof(EnrolmentDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<EnrolmentDto>> SetStatus(int id, EnrolmentStatusRequest req)
+    {
+        if (req.Status != "Pending" && req.Status != "Confirmed")
+            return BadRequest(new ProblemDetails { Title = "Status must be Pending or Confirmed." });
+
+        var enrolment = await _db.Enrolments
+            .Include(e => e.Participant).Include(e => e.Event).Include(e => e.Category)
+            .FirstOrDefaultAsync(e => e.EnrolmentId == id);
+        if (enrolment is null) return NotFound();
+        if (enrolment.Event.OrganiserId != User.GetUserId()) return Forbid();
+
+        enrolment.Status = req.Status;
+        await _db.SaveChangesAsync();
+        return Ok(enrolment.ToDto());
+    }
 
     /// <summary>Lists all enrolments in a category. Owning Organiser only.</summary>
     [HttpGet("categories/{id:int}/enrolments")]

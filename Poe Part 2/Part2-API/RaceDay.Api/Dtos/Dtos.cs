@@ -189,3 +189,27 @@ public static class Mapping
         RecordedAt = r.RecordedAt
     };
 }
+
+// ---------- Part 3 additions ----------
+public class OrganiserEventDto : EventDto
+{
+    public int EnrolmentCount { get; set; }
+}
+
+public class EnrolmentStatusRequest
+{
+    [Required]
+    public string Status { get; set; } = string.Empty;
+}
+
+public class MyResultDto
+{
+    public int EnrolmentId { get; set; }
+    public int EventId { get; set; }
+    public string EventName { get; set; } = string.Empty;
+    public DateTime EventDate { get; set; }
+    public string CategoryName { get; set; } = string.Empty;
+    public TimeSpan FinishTime { get; set; }
+    public int? FinishPosition { get; set; }
+    public int TotalFinishers { get; set; }
+}

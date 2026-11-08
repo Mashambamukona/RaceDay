@@ -75,6 +75,32 @@ public class UsersController : ControllerBase
         await _db.SaveChangesAsync();
         return Ok(ToProfile(user));
     }
+    /// <summary>Lists the logged-in participant's race results, with their position and the total finishers. Participants only.</summary>
+    [HttpGet("me/results")]
+    [Authorize(Roles = AppRoles.Participant)]
+    [ProducesResponseType(typeof(IEnumerable<MyResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<IEnumerable<MyResultDto>>> MyResults()
+    {
+        var uid = User.GetUserId();
+        var results = await _db.Results.AsNoTracking()
+            .Where(r => r.Enrolment.ParticipantId == uid)
+            .OrderByDescending(r => r.Enrolment.Event.EventDate)
+            .Select(r => new MyResultDto
+            {
+                EnrolmentId = r.EnrolmentId,
+                EventId = r.Enrolment.EventId,
+                EventName = r.Enrolment.Event.Name,
+                EventDate = r.Enrolment.Event.EventDate,
+                CategoryName = r.Enrolment.Category.Name,
+                FinishTime = r.FinishTime,
+                FinishPosition = r.FinishPosition,
+                TotalFinishers = _db.Results.Count(x => x.Enrolment.CategoryId == r.Enrolment.CategoryId)
+            })
+            .ToListAsync();
+        return Ok(results);
+    }
 
     /// <summary>Returns a specific user's public profile. Organisers only.</summary>
     [HttpGet("{id:int}")]
