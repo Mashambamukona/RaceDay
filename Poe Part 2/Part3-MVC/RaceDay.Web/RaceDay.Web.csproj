@@ -6,12 +6,4 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Content Remove="Views\Account\Login.cshtml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Views\Account\Login.cshtml" />
-  </ItemGroup>
-
 </Project>
