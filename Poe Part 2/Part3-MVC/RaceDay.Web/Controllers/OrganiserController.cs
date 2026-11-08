@@ -1,0 +1,166 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using RaceDay.Web.Filters;
+using RaceDay.Web.Models;
+using RaceDay.Web.Services;
+
+namespace RaceDay.Web.Controllers;
+
+[SessionAuthorize("Organiser")]
+public class OrganiserController : Controller
+{
+    private readonly ApiClient _api;
+
+    public OrganiserController(ApiClient api) => _api = api;
+
+    // ---------- Dashboard ----------
+    public async Task<IActionResult> Index()
+    {
+        var result = await _api.GetAsync<List<OrganiserEventDto>>("api/events/mine");
+        if (!result.Success) ViewData["ApiError"] = result.Error;
+        return View(result.Data ?? new List<OrganiserEventDto>());
+    }
+
+    // ---------- Events list ----------
+    public async Task<IActionResult> Events()
+    {
+        var result = await _api.GetAsync<List<OrganiserEventDto>>("api/events/mine");
+        if (!result.Success) ViewData["ApiError"] = result.Error;
+        return View(result.Data ?? new List<OrganiserEventDto>());
+    }
+
+    // ---------- Create ----------
+    [HttpGet]
+    public IActionResult CreateEvent() => View("EventForm", new EventFormViewModel());
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateEvent(EventFormViewModel model, IFormFile? banner)
+    {
+        if (!ModelState.IsValid) return View("EventForm", model);
+
+        if (!IsValidBanner(banner, out var bannerError))
+        {
+            ModelState.AddModelError(string.Empty, bannerError);
+            return View("EventForm", model);
+        }
+
+        var created = await _api.PostAsync<EventDto>("api/events", ToRequest(model));
+        if (!created.Success || created.Data is null)
+        {
+            ModelState.AddModelError(string.Empty, created.Error);
+            return View("EventForm", model);
+        }
+
+        if (banner is not null && banner.Length > 0)
+        {
+            var upload = await _api.UploadAsync<EventDto>($"api/events/{created.Data.EventId}/banner", banner);
+            if (!upload.Success)
+            {
+                TempData["Error"] = "The event was created, but the banner could not be uploaded. " + upload.Error;
+                return RedirectToAction(nameof(Events));
+            }
+        }
+
+        TempData["Success"] = "Event created.";
+        return RedirectToAction(nameof(Events));
+    }
+
+    // ---------- Edit ----------
+    [HttpGet]
+    public async Task<IActionResult> EditEvent(int id)
+    {
+        var result = await _api.GetAsync<EventDetailDto>($"api/events/{id}");
+        if (!result.Success || result.Data is null || result.Data.OrganiserId != HttpContext.Session.GetUserId())
+        {
+            TempData["Error"] = "We could not find that event.";
+            return RedirectToAction(nameof(Events));
+        }
+
+        var e = result.Data;
+        return View("EventForm", new EventFormViewModel
+        {
+            EventId = e.EventId,
+            Name = e.Name,
+            Description = e.Description,
+            EventDate = e.EventDate,
+            Location = e.Location,
+            Distance = e.Distance,
+            EventType = e.EventType,
+            ExistingBannerUrl = e.BannerUrl
+        });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditEvent(int id, EventFormViewModel model, IFormFile? banner)
+    {
+        model.EventId = id;
+        if (!ModelState.IsValid) return View("EventForm", model);
+
+        if (!IsValidBanner(banner, out var bannerError))
+        {
+            ModelState.AddModelError(string.Empty, bannerError);
+            return View("EventForm", model);
+        }
+
+        var updated = await _api.PutAsync<EventDto>($"api/events/{id}", ToRequest(model));
+        if (!updated.Success)
+        {
+            ModelState.AddModelError(string.Empty, updated.Error);
+            return View("EventForm", model);
+        }
+
+        if (banner is not null && banner.Length > 0)
+        {
+            var upload = await _api.UploadAsync<EventDto>($"api/events/{id}/banner", banner);
+            if (!upload.Success)
+            {
+                TempData["Error"] = "The event was updated, but the banner could not be uploaded. " + upload.Error;
+                return RedirectToAction(nameof(Events));
+            }
+        }
+
+        TempData["Success"] = "Event updated.";
+        return RedirectToAction(nameof(Events));
+    }
+
+    // ---------- Delete ----------
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteEvent(int id)
+    {
+        var result = await _api.DeleteAsync($"api/events/{id}");
+        if (result.Success) TempData["Success"] = "Event deleted.";
+        else TempData["Error"] = result.Error;
+
+        return RedirectToAction(nameof(Events));
+    }
+
+    // ---------- Helpers ----------
+    private static EventRequest ToRequest(EventFormViewModel m) => new()
+    {
+        Name = m.Name,
+        Description = m.Description,
+        EventDate = m.EventDate,
+        Location = m.Location,
+        Distance = m.Distance,
+        EventType = m.EventType
+    };
+
+    private static bool IsValidBanner(IFormFile? file, out string error)
+    {
+        error = string.Empty;
+        if (file is null || file.Length == 0) return true;
+
+        if (!file.ContentType.StartsWith("image/"))
+        {
+            error = "The banner must be an image file.";
+            return false;
+        }
+
+        if (file.Length > 5 * 1024 * 1024)
+        {
+            error = "The banner must be smaller than 5 MB.";
+            return false;
+        }
+
+        return true;
+    }
+}

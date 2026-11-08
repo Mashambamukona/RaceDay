@@ -14,3 +14,9 @@ public class EventDetailsViewModel
     public bool IsParticipant { get; set; }
     public bool AlreadyEnrolled { get; set; }
 }
+
+public class EventFormViewModel : EventRequest
+{
+    public int? EventId { get; set; }
+    public string? ExistingBannerUrl { get; set; }
+}
