@@ -1,22 +1,203 @@
-html {
-  font-size: 14px;
-}
-
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+:root {
+    --rd-orange: #ff6b1a;
+    --rd-orange-dark: #e05200;
+    --rd-navy: #0b1f3a;
+    --rd-navy-light: #14325c;
+    --rd-bg: #f3f5f9;
+    --rd-text: #1a2433;
+    --rd-muted: #6b7a90;
+    --rd-green: #198754;
+    --rd-amber: #ffb300;
 }
 
 html {
-  position: relative;
-  min-height: 100%;
+    font-size: 15px;
+    position: relative;
+    min-height: 100%;
 }
 
 body {
-  margin-bottom: 60px;
+    font-family: 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
+    background: var(--rd-bg);
+    color: var(--rd-text);
+    margin-bottom: 70px;
+}
+
+h1, h2, h3, h4, h5 {
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--rd-navy);
+}
+
+a {
+    color: var(--rd-orange-dark);
+}
+
+    a:hover {
+        color: var(--rd-orange);
+    }
+
+/* Navigation */
+.rd-navbar {
+    background: linear-gradient(90deg, var(--rd-navy), var(--rd-navy-light));
+    border-bottom: 4px solid var(--rd-orange);
+}
+
+.rd-brand {
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: 0.08em;
+    font-size: 1.5rem;
+    color: #fff !important;
+}
+
+    .rd-brand span {
+        color: var(--rd-orange);
+    }
+
+.rd-navbar .nav-link {
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+}
+
+    .rd-navbar .nav-link:hover {
+        color: var(--rd-orange);
+    }
+
+.rd-role-badge {
+    background: var(--rd-orange);
+    color: #fff;
+    text-transform: uppercase;
+}
+
+/* Buttons */
+.btn-rd {
+    background: var(--rd-orange);
+    border-color: var(--rd-orange);
+    color: #fff;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+    .btn-rd:hover, .btn-rd:focus {
+        background: var(--rd-orange-dark);
+        border-color: var(--rd-orange-dark);
+        color: #fff;
+    }
+
+.btn-outline-rd {
+    border: 2px solid var(--rd-orange);
+    color: var(--rd-orange-dark);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+    .btn-outline-rd:hover {
+        background: var(--rd-orange);
+        color: #fff;
+    }
+
+/* Cards and hero */
+.rd-card {
+    border: 0;
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(11, 31, 58, 0.08);
+    overflow: hidden;
+    background: #fff;
+}
+
+.rd-hero {
+    background: linear-gradient(120deg, var(--rd-navy), var(--rd-navy-light));
+    color: #fff;
+    border-radius: 14px;
+    padding: 2rem;
+    border-left: 8px solid var(--rd-orange);
+}
+
+    .rd-hero h1, .rd-hero h2 {
+        color: #fff;
+    }
+
+.rd-banner {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    background: var(--rd-navy-light);
+}
+
+.rd-banner-large {
+    width: 100%;
+    max-height: 320px;
+    object-fit: cover;
+    border-radius: 14px;
+}
+
+.rd-avatar {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 4px solid var(--rd-orange);
+}
+
+.rd-stat {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: var(--rd-orange);
+    line-height: 1;
+}
+
+/* Tables */
+.table thead th {
+    background: var(--rd-navy);
+    color: #fff;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    border: 0;
+}
+
+/* Enrolment status colours */
+.rd-status {
+    padding: 0.35em 0.8em;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+}
+
+.rd-status-Confirmed {
+    background: var(--rd-green);
+    color: #fff;
+}
+
+.rd-status-Pending {
+    background: var(--rd-amber);
+    color: #1a1a1a;
+}
+
+/* Forms */
+.form-control:focus, .form-select:focus {
+    border-color: var(--rd-orange);
+    box-shadow: 0 0 0 0.2rem rgba(255, 107, 26, 0.25);
+}
+
+.form-label {
+    font-weight: 600;
+}
+
+.footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    line-height: 60px;
+    background: var(--rd-navy);
+    color: rgba(255, 255, 255, 0.7);
+    text-align: center;
 }
