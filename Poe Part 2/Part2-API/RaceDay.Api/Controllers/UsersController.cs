@@ -14,7 +14,13 @@ namespace RaceDay.Api.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly RaceDayDbContext _db;
-    public UsersController(RaceDayDbContext db) => _db = db;
+    private readonly IBlobStorageService _blobs;
+
+    public UsersController(RaceDayDbContext db, IBlobStorageService blobs)
+    {
+        _db = db;
+        _blobs = blobs;
+    }
 
     private static UserProfileDto ToProfile(User u) => new()
     {
@@ -48,6 +54,24 @@ public class UsersController : ControllerBase
         if (user is null) return NotFound();
 
         user.FullName = req.FullName.Trim();
+        await _db.SaveChangesAsync();
+        return Ok(ToProfile(user));
+    }
+    /// <summary>Uploads a profile picture for the logged-in user (stored in Azure Blob Storage).</summary>
+    [HttpPost("me/picture")]
+    [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<UserProfileDto>> UploadPicture(IFormFile file)
+    {
+        var uid = User.GetUserId();
+        var user = await _db.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.UserId == uid);
+        if (user is null) return NotFound();
+
+        if (file is null || file.Length == 0 || !file.ContentType.StartsWith("image/") || file.Length > 5 * 1024 * 1024)
+            return BadRequest(new ProblemDetails { Title = "Please upload an image smaller than 5 MB." });
+
+        user.ProfilePictureUrl = await _blobs.UploadImageAsync(file, "profiles");
         await _db.SaveChangesAsync();
         return Ok(ToProfile(user));
     }

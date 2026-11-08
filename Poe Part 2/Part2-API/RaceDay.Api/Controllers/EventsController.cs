@@ -13,7 +13,13 @@ namespace RaceDay.Api.Controllers;
 public class EventsController : ControllerBase
 {
     private readonly RaceDayDbContext _db;
-    public EventsController(RaceDayDbContext db) => _db = db;
+    private readonly IBlobStorageService _blobs;
+
+    public EventsController(RaceDayDbContext db, IBlobStorageService blobs)
+    {
+        _db = db;
+        _blobs = blobs;
+    }
 
     /// <summary>Lists all events. Optional filters: date (that day), location (contains), eventType.</summary>
     [HttpGet]
@@ -95,6 +101,27 @@ public class EventsController : ControllerBase
         ev.Location = req.Location.Trim();
         ev.Distance = req.Distance;
         ev.EventType = req.EventType;
+        await _db.SaveChangesAsync();
+        return Ok(ev.ToDto());
+    }
+    /// <summary>Uploads a banner image for an event (stored in Azure Blob Storage). Owning Organiser only.</summary>
+    [HttpPost("{id:int}/banner")]
+    [Authorize(Roles = AppRoles.Organiser)]
+    [ProducesResponseType(typeof(EventDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<EventDto>> UploadBanner(int id, IFormFile file)
+    {
+        var ev = await _db.Events.FirstOrDefaultAsync(e => e.EventId == id);
+        if (ev is null) return NotFound();
+        if (ev.OrganiserId != User.GetUserId()) return Forbid();
+
+        if (file is null || file.Length == 0 || !file.ContentType.StartsWith("image/") || file.Length > 5 * 1024 * 1024)
+            return BadRequest(new ProblemDetails { Title = "Please upload an image smaller than 5 MB." });
+
+        ev.BannerUrl = await _blobs.UploadImageAsync(file, "banners");
         await _db.SaveChangesAsync();
         return Ok(ev.ToDto());
     }
