@@ -12,6 +12,7 @@ builder.Services.AddDbContext<RaceDayDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("RaceDayDb")));
 
 builder.Services.AddSingleton<IPasswordHasher, PasswordHasher>();
+builder.Services.AddSingleton<IBlobStorageService, BlobStorageService>();
 
 // Session-based authentication: the cookie IS the session and carries the user id + role
 builder.Services
