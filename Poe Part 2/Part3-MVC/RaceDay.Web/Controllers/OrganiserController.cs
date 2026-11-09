@@ -221,6 +221,56 @@ public class OrganiserController : Controller
 
         return vm;
     }
+    // ---------- Results ----------
+    public async Task<IActionResult> Results(int? eventId)
+    {
+        return View(await BuildResultsViewModel(eventId));
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> RecordResult(int id, int eventId, string? finishTime, int? finishPosition)
+    {
+        if (!TimeSpan.TryParse(finishTime, out var time) || time <= TimeSpan.Zero || time >= TimeSpan.FromHours(24))
+        {
+            TempData["Error"] = "Please enter the finish time as hh:mm:ss, for example 00:52:31.";
+            return RedirectToAction(nameof(Results), new { eventId });
+        }
+
+        var result = await _api.PostAsync<ResultDto>($"api/enrolments/{id}/result",
+            new { FinishTime = time, FinishPosition = finishPosition });
+
+        if (result.Success) TempData["Success"] = "Result saved.";
+        else TempData["Error"] = result.Error;
+
+        return RedirectToAction(nameof(Results), new { eventId });
+    }
+
+    private async Task<ResultsViewModel> BuildResultsViewModel(int? eventId)
+    {
+        var events = await _api.GetAsync<List<OrganiserEventDto>>("api/events/mine");
+        if (!events.Success) ViewData["ApiError"] = events.Error;
+
+        var vm = new ResultsViewModel { Events = events.Data ?? new List<OrganiserEventDto>() };
+        vm.SelectedEventId = eventId ?? vm.Events.OrderBy(e => e.EventDate).FirstOrDefault()?.EventId;
+
+        if (vm.SelectedEventId.HasValue)
+        {
+            var enrolments = await _api.GetAsync<List<EnrolmentDto>>($"api/events/{vm.SelectedEventId}/enrolments");
+            if (!enrolments.Success) ViewData["ApiError"] = enrolments.Error;
+            vm.Enrolments = enrolments.Data ?? new List<EnrolmentDto>();
+
+            foreach (var categoryId in vm.Enrolments.Select(e => e.CategoryId).Distinct())
+            {
+                var board = await _api.GetAsync<List<ResultDto>>($"api/categories/{categoryId}/results");
+                if (board.Success && board.Data is not null)
+                {
+                    foreach (var r in board.Data) vm.Results[r.EnrolmentId] = r;
+                }
+            }
+        }
+
+        return vm;
+    }
     // ---------- Helpers ----------
     private static EventRequest ToRequest(EventFormViewModel m) => new()
     {

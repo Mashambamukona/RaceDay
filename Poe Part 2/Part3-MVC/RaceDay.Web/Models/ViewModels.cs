@@ -35,3 +35,11 @@ public class EnrolmentsViewModel
     public int? SelectedEventId { get; set; }
     public List<EnrolmentDto> Enrolments { get; set; } = new();
 }
+
+public class ResultsViewModel
+{
+    public List<OrganiserEventDto> Events { get; set; } = new();
+    public int? SelectedEventId { get; set; }
+    public List<EnrolmentDto> Enrolments { get; set; } = new();
+    public Dictionary<int, ResultDto> Results { get; set; } = new();
+}
