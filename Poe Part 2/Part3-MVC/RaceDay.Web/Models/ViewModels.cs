@@ -20,3 +20,11 @@ public class EventFormViewModel : EventRequest
     public int? EventId { get; set; }
     public string? ExistingBannerUrl { get; set; }
 }
+
+public class CategoriesViewModel
+{
+    public List<OrganiserEventDto> Events { get; set; } = new();
+    public int? SelectedEventId { get; set; }
+    public List<CategoryDto> Categories { get; set; } = new();
+    public CategoryRequest NewCategory { get; set; } = new();
+}

@@ -133,6 +133,61 @@ public class OrganiserController : Controller
         return RedirectToAction(nameof(Events));
     }
 
+    // ---------- Categories ----------
+    public async Task<IActionResult> Categories(int? eventId)
+    {
+        return View(await BuildCategoriesViewModel(eventId));
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddCategory(int eventId, [Bind(Prefix = "NewCategory")] CategoryRequest model)
+    {
+        if (model.MinAge.HasValue && model.MaxAge.HasValue && model.MinAge > model.MaxAge)
+            ModelState.AddModelError(string.Empty, "Minimum age cannot be higher than maximum age.");
+
+        if (ModelState.IsValid)
+        {
+            var result = await _api.PostAsync<CategoryDto>($"api/events/{eventId}/categories", model);
+            if (result.Success)
+            {
+                TempData["Success"] = "Category added.";
+                return RedirectToAction(nameof(Categories), new { eventId });
+            }
+
+            ModelState.AddModelError(string.Empty, result.Error);
+        }
+
+        var vm = await BuildCategoriesViewModel(eventId);
+        vm.NewCategory = model;
+        return View("Categories", vm);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteCategory(int id, int eventId)
+    {
+        var result = await _api.DeleteAsync($"api/categories/{id}");
+        if (result.Success) TempData["Success"] = "Category deleted.";
+        else TempData["Error"] = result.Error;
+
+        return RedirectToAction(nameof(Categories), new { eventId });
+    }
+
+    private async Task<CategoriesViewModel> BuildCategoriesViewModel(int? eventId)
+    {
+        var events = await _api.GetAsync<List<OrganiserEventDto>>("api/events/mine");
+        if (!events.Success) ViewData["ApiError"] = events.Error;
+
+        var vm = new CategoriesViewModel { Events = events.Data ?? new List<OrganiserEventDto>() };
+        vm.SelectedEventId = eventId ?? vm.Events.OrderBy(e => e.EventDate).FirstOrDefault()?.EventId;
+
+        if (vm.SelectedEventId.HasValue)
+        {
+            var cats = await _api.GetAsync<List<CategoryDto>>($"api/events/{vm.SelectedEventId}/categories");
+            vm.Categories = cats.Data ?? new List<CategoryDto>();
+        }
+
+        return vm;
+    }
     // ---------- Helpers ----------
     private static EventRequest ToRequest(EventFormViewModel m) => new()
     {
