@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore Part2-API/RaceDay.sln
+
+      - name: Build API, tests and website
+        run: dotnet build Part2-API/RaceDay.sln --no-restore -c Release
+
+      - name: Run tests
+        run: dotnet test Part2-API/RaceDay.sln --no-build -c Release
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: build-test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build website Docker image
+        run: docker build -t raceday-web .

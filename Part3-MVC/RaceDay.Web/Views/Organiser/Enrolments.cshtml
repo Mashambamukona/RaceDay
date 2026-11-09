@@ -1,0 +1,87 @@
+﻿@model EnrolmentsViewModel
+@{
+    ViewData["Title"] = "Enrolments";
+}
+
+<h1 class="mb-3">Enrolments</h1>
+
+@if (ViewData["ApiError"] is string apiError && apiError.Length > 0)
+{
+    <div class="alert alert-warning">@apiError</div>
+}
+
+@if (!Model.Events.Any())
+{
+    <div class="rd-card p-5 text-center">
+        <h4>Create an event first</h4>
+        <p class="text-muted">Participants can only enrol in events you have created.</p>
+        <a class="btn btn-rd" asp-action="CreateEvent">Create event</a>
+    </div>
+}
+else
+{
+    <form method="get" asp-action="Enrolments" class="rd-card p-3 mb-4">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-8">
+                <label class="form-label" for="eventId">Event</label>
+                <select class="form-select" id="eventId" name="eventId" onchange="this.form.submit()">
+                    @foreach (var e in Model.Events)
+                    {
+                        <option value="@e.EventId" selected="@(e.EventId == Model.SelectedEventId)">
+                            @e.Name - @e.EventDate.ToString("dd MMM yyyy") (@e.EnrolmentCount enrolled)
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4 d-grid">
+                <button type="submit" class="btn btn-outline-rd">Show enrolments</button>
+            </div>
+        </div>
+    </form>
+
+    <div class="rd-card p-4">
+        @if (!Model.Enrolments.Any())
+        {
+            <p class="text-muted mb-0">Nobody has enrolled in this event yet.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr><th>Participant</th><th>Category</th><th>Enrolled on</th><th>Status</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var en in Model.Enrolments)
+                        {
+                            <tr>
+                                <td>@en.ParticipantName</td>
+                                <td>@en.CategoryName</td>
+                                <td>@en.EnrolmentDate.ToString("dd MMM yyyy HH:mm")</td>
+                                <td><span class="rd-status rd-status-@en.Status">@en.Status</span></td>
+                                <td class="text-end">
+                                    @if (en.Status == "Pending")
+                                    {
+                                        <form asp-action="SetEnrolmentStatus" asp-route-id="@en.EnrolmentId"
+                                              asp-route-eventId="@Model.SelectedEventId" method="post" class="d-inline">
+                                            <input type="hidden" name="status" value="Confirmed" />
+                                            <button type="submit" class="btn btn-rd btn-sm">Confirm</button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <form asp-action="SetEnrolmentStatus" asp-route-id="@en.EnrolmentId"
+                                              asp-route-eventId="@Model.SelectedEventId" method="post" class="d-inline">
+                                            <input type="hidden" name="status" value="Pending" />
+                                            <button type="submit" class="btn btn-outline-rd btn-sm">Set to pending</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}
