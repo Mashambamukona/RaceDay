@@ -104,6 +104,35 @@ public class EventsController : ControllerBase
         await _db.SaveChangesAsync();
         return Ok(ev.ToDto());
     }
+    /// <summary>Lists the logged-in Organiser's own events, with how many people enrolled in each.</summary>
+    [HttpGet("mine")]
+    [Authorize(Roles = AppRoles.Organiser)]
+    [ProducesResponseType(typeof(IEnumerable<OrganiserEventDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<IEnumerable<OrganiserEventDto>>> GetMine()
+    {
+        var uid = User.GetUserId();
+        var events = await _db.Events.AsNoTracking()
+            .Where(e => e.OrganiserId == uid)
+            .OrderBy(e => e.EventDate)
+            .Select(e => new OrganiserEventDto
+            {
+                EventId = e.EventId,
+                Name = e.Name,
+                Description = e.Description,
+                EventDate = e.EventDate,
+                Location = e.Location,
+                Distance = e.Distance,
+                EventType = e.EventType,
+                OrganiserId = e.OrganiserId,
+                BannerUrl = e.BannerUrl,
+                EnrolmentCount = _db.Enrolments.Count(en => en.EventId == e.EventId)
+            })
+            .ToListAsync();
+
+        return Ok(events);
+    }
     /// <summary>Uploads a banner image for an event (stored in Azure Blob Storage). Owning Organiser only.</summary>
     [HttpPost("{id:int}/banner")]
     [Authorize(Roles = AppRoles.Organiser)]
