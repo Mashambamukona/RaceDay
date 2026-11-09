@@ -188,6 +188,39 @@ public class OrganiserController : Controller
 
         return vm;
     }
+    // ---------- Enrolments ----------
+    public async Task<IActionResult> Enrolments(int? eventId)
+    {
+        return View(await BuildEnrolmentsViewModel(eventId));
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> SetEnrolmentStatus(int id, string status, int eventId)
+    {
+        var result = await _api.PutAsync<EnrolmentDto>($"api/enrolments/{id}/status", new { Status = status });
+        if (result.Success) TempData["Success"] = $"Enrolment marked as {status}.";
+        else TempData["Error"] = result.Error;
+
+        return RedirectToAction(nameof(Enrolments), new { eventId });
+    }
+
+    private async Task<EnrolmentsViewModel> BuildEnrolmentsViewModel(int? eventId)
+    {
+        var events = await _api.GetAsync<List<OrganiserEventDto>>("api/events/mine");
+        if (!events.Success) ViewData["ApiError"] = events.Error;
+
+        var vm = new EnrolmentsViewModel { Events = events.Data ?? new List<OrganiserEventDto>() };
+        vm.SelectedEventId = eventId ?? vm.Events.OrderBy(e => e.EventDate).FirstOrDefault()?.EventId;
+
+        if (vm.SelectedEventId.HasValue)
+        {
+            var list = await _api.GetAsync<List<EnrolmentDto>>($"api/events/{vm.SelectedEventId}/enrolments");
+            if (!list.Success) ViewData["ApiError"] = list.Error;
+            vm.Enrolments = list.Data ?? new List<EnrolmentDto>();
+        }
+
+        return vm;
+    }
     // ---------- Helpers ----------
     private static EventRequest ToRequest(EventFormViewModel m) => new()
     {

@@ -28,3 +28,10 @@ public class CategoriesViewModel
     public List<CategoryDto> Categories { get; set; } = new();
     public CategoryRequest NewCategory { get; set; } = new();
 }
+
+public class EnrolmentsViewModel
+{
+    public List<OrganiserEventDto> Events { get; set; } = new();
+    public int? SelectedEventId { get; set; }
+    public List<EnrolmentDto> Enrolments { get; set; } = new();
+}
